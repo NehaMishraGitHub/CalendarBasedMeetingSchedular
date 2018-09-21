@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QuickAction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>This button opens Calendar component for users to create meeting events for the contact</description>
+    <height>600</height>
+    <label>Schedule Meeting</label>
+    <lightningComponent>CalenderComponent</lightningComponent>
+    <optionsCreateFeedItem>false</optionsCreateFeedItem>
+    <type>LightningComponent</type>
+    <width>-100</width>
+</QuickAction>
