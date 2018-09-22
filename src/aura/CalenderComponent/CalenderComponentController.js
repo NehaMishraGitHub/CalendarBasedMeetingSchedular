@@ -20,6 +20,10 @@
        component.set("v.showEventForm", false);
     },
     saveData: function(component, event, helper) {
-        helper.saveEvents(component);
+        helper.saveEvent(component);
+    },
+    closeModal: function(component, event, helper) {
+        $A.get("e.force:closeQuickAction").fire();
+        $A.get('e.force:refreshView').fire();
     }
 })

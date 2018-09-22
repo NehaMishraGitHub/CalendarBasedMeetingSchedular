@@ -7,12 +7,13 @@
     },
     fetchEvents : function(component) {
         let userId = $A.get("$SObjectType.CurrentUser.Id");
+        let userTimeZone = $A.get("$Locale.timezone");
         let self = this;
-        console.log(userId);
+        console.log(userTimeZone);
         let action = component.get("c.getEventsWithOwnerId");
         action.setCallback(this, function(actionResult) {
             console.log(actionResult.getReturnValue());
-            let formattedEvents = self.transformEventInFCformat(component, actionResult.getReturnValue());
+            let formattedEvents = self.transformEventInFCformat(component, actionResult.getReturnValue(),userTimeZone);
             console.log("formattedEvents: ",formattedEvents);
             self.initializeCalendar(component,formattedEvents);
             component.set("v.events",formattedEvents);
@@ -28,6 +29,16 @@
        // console.log($('#calendar').fullCalendar());
         $('#calendar').fullCalendar({
             viewRender: function(view,element){console.log(element,"   =====   ",view);},
+            eventRender: function (calev, elt, view) {
+                var ntoday = new Date();
+                console.log("calev.start: ", calev.start);
+                if (calev.start._d.getTime() < ntoday.getTime()) {
+                    //elt.addClass("past");
+                   // elt.children().addClass("past");
+                    elt.css("background-color", "green");
+                    elt.css("text-decoration", "line-through");
+                }
+            },
             themeSystem: 'jquery-ui',
             header: {
                 //left: 'prev,next today',
@@ -56,14 +67,14 @@
             events: formattedEvents
         });
     },
-    transformEventInFCformat: function(component, events) {
+    transformEventInFCformat: function(component, events, userTimeZone) {
     	let formattedEvents =[];
         for(let index in events) {
             formattedEvents.push({
                 'id':events[index].Id,
                 'title':events[index].Subject,
-                'start':events[index].StartDateTime,
-                'end':events[index].EndDateTime,
+                'start':moment(events[index].StartDateTime).tz(userTimeZone).format(),
+                'end':moment(events[index].EndDateTime).tz(userTimeZone).format(),
                 'allDay': events[index].IsAllDayEvent
             });
         }
@@ -72,6 +83,7 @@
     openEventForm : function(component) {
         //console.log(component);
         component.set("v.showEventForm",true);
+        console.log(component.get("v.showEventForm"));
 //        var myEvent = {
 //            title:"New Event",
 //            allDay: true,
@@ -101,9 +113,36 @@
 		$('#calendar').fullCalendar( 'renderEvent', myEvent );
 		component.set("v.showEventForm",false);
     },
+    saveEvent: function(component) {
+        console.log(component.get("v.recordId"));
+        let selectedDate = component.get("v.selectedDate");
+        let startDateTime = moment(selectedDate + " " + component.find("start-time").get("v.value"));
+        let endDateTime = moment(selectedDate + " " + component.find("end-time").get("v.value"));
+        let myEvent = {
+            title:component.find("subject").get("v.value"),
+            allDay: component.find("all-day-event").get("v.value"),
+            //start: startDateTime.toISOString(),
+            start: startDateTime.format("MM/DD/YYYY hh:mm a"),
+            end: endDateTime.format("MM/DD/YYYY hh:mm a")
+        };
+        console.log("myEvent: ",myEvent);
+        let action = component.get("c.saveEvent");
+        action.setParams({
+            contactId: component.get("v.recordId"),
+            eventData: myEvent
+        })
+        action.setCallback(this, function(actionResult) {
+            console.log(actionResult.getReturnValue());
+
+            $('#calendar').fullCalendar( 'renderEvent', myEvent );
+            component.set("v.showEventForm",false);
+        });
+        $A.enqueueAction(action);
+
+    },
     saveEvents: function(component) {
         //$('#testPrev').click(function() {
-          $('#calendar').fullCalendar('prev');
+          //$('#calendar').fullCalendar('prev');
         //});
 
 //          $('#testPrev').fullCalendar({

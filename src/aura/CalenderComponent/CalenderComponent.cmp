@@ -2,23 +2,29 @@
  - Created by Neha on 9/17/2018.
  -->
 
-<aura:component description="CalenderComponent" implements="force:appHostable,flexipage:availableForAllPageTypes,force:lightningQuickAction" controller="CalendarComponentAuraController">
+<aura:component description="CalenderComponent" implements="force:appHostable,flexipage:availableForAllPageTypes,force:lightningQuickActionWithoutHeader,force:hasRecordId" controller="CalendarComponentAuraController">
     <ltng:require styles="{!join(',',
     $Resource.FullCalendarPlugin  + '/fullcalendar.min.css',
     $Resource.FullCalendarPlugin  + '/lib/jquery-ui.css')}" scripts="{!join(',',
-$Resource.FullCalendarPlugin  + '/lib/jquery.min.js',
-$Resource.FullCalendarPlugin  + '/lib/jquery-ui.min.js',
-$Resource.FullCalendarPlugin  + '/lib/moment.min.js', $Resource.FullCalendarPlugin  + '/fullcalendar.js')}" afterScriptsLoaded= "{!c.onJSload}"/>
+    $Resource.FullCalendarPlugin  + '/lib/jquery.min.js',
+    $Resource.FullCalendarPlugin  + '/lib/jquery-ui.min.js',
+    $Resource.FullCalendarPlugin  + '/lib/moment.min.js',
+    $Resource.FullCalendarPlugin  + '/lib/moment-tz.min.js',$Resource.FullCalendarPlugin  + '/fullcalendar.js')}" afterScriptsLoaded= "{!c.onJSload}"/>
     <!--<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>-->
     <aura:attribute name="showEventForm" type="Boolean" default="false"/>
     <aura:attribute name="events" type="Object[]" />
     <aura:attribute name="newEvents" type="Object[]" />
     <aura:attribute name="selectedDate" type="Date"/>
+    <aura:attribute name="recordId" type="String"/>
     <!--<aura:attribute name="subject" type="String"/>-->
     <!--<aura:attribute name="startTime" type="Time"/>-->
     <!--<aura:attribute name="endTime" type="Time"/>-->
     <!--<aura:attribute name="isAllDayEvent" type="Boolean"/>-->
+
+
     <!-- Event Creation Form -->
+
+    <div class="slds-modal__content" id="calendar" style="height:570px; width:570px"></div>
     <aura:if isTrue="{!v.showEventForm}">
         <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
             <div class="slds-modal__container">
@@ -29,7 +35,8 @@ $Resource.FullCalendarPlugin  + '/lib/moment.min.js', $Resource.FullCalendarPlug
                     <lightning:input aura:id="subject" label="Subject" type="text" value=""/>
                     <lightning:input aura:id="start-time" label="Start Time" type="time" value=""/>
                     <lightning:input aura:id="end-time" label="End Time" type="time" value=""/>
-                    <lightning:input aura:id="all-day-event" label="All Day Event" type="checkbox" value=""/>
+                    <lightning:input aura:id="all-day-event" label="All Day Event" type="checkbox" value="false"/>
+                    <!--<ui:inputCheckbox aura:id="all-day-event" label="All Day Event" value="false"/>-->
                 </div>
                 <footer class="slds-modal__footer">
                     <lightning:button variant="neutral"
@@ -39,17 +46,16 @@ $Resource.FullCalendarPlugin  + '/lib/moment.min.js', $Resource.FullCalendarPlug
                     <lightning:button variant="brand"
                                       label="Save and Close"
                                       title="Save and Close"
-                                      onclick="{! c.addNewEvent }"/>
+                                      onclick="{!c.saveData}"/>
                 </footer>
             </div>
         </section>
         <div class="slds-backdrop slds-backdrop_open"></div>
     </aura:if>
-    <div class="slds-modal__content" id="calendar" style="height:570px; width:570px"></div>
     <!--<footer class="slds-modal__footer">-->
-        <!--<lightning:button variant="neutral"-->
-                          <!--label="Cancel"-->
-                          <!--title="Cancel"/>-->
+        <lightning:button variant="neutral"
+                          label="Close"
+                          title="Close" onclick="{!c.closeModal}"/>
     <button id="testPrev" onclick="{!c.saveData}">TestPrev</button>
     <!--</footer>-->
 

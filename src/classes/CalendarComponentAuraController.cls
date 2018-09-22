@@ -13,8 +13,16 @@ public with sharing class CalendarComponentAuraController {
     }
 
     @AuraEnabled
-    public static String saveEvents(Map<Object, Object> events) {
-        System.debug(events);
-        return null;
+    public static Event saveEvent(String contactId, Map<String, String> eventData) {
+        System.debug('eventData: '+eventData);
+     	Event event = new Event(
+                WhoId = contactId,
+                Subject =  eventData.get('title'),
+                StartDateTime = Datetime.parse(eventData.get('start')),
+                EndDateTime = Datetime.parse(eventData.get('end')),
+                IsAllDayEvent = eventData.get('allDay')== 'true'?true:false
+        );
+        insert event;
+        return event;
     }
 }
