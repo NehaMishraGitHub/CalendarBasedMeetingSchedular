@@ -9,20 +9,38 @@ public with sharing class CalendarComponentAuraController {
         Id userId = UserInfo.getUserId();
         System.debug('userId: '+userId);
 
-        return [SELECT ActivityDate,ActivityDateTime,DurationInMinutes,EndDateTime,EventSubtype,GroupEventType,Id,IsAllDayEvent,StartDateTime,Subject,Type,WhatId,WhoId FROM Event WHERE OwnerId =:userId AND isDeleted = FALSE ];
+        return [SELECT EndDateTime,Description,Id,IsAllDayEvent,StartDateTime,Subject,Type,WhatId,WhoId,Who.Name, Confirmed__c,Rejected_Cancelled__c FROM Event WHERE OwnerId =:userId AND isDeleted = FALSE ];
     }
 
     @AuraEnabled
     public static Event saveEvent(String contactId, Map<String, String> eventData) {
-        System.debug('eventData: '+eventData);
-     	Event event = new Event(
-                WhoId = contactId,
-                Subject =  eventData.get('title'),
-                StartDateTime = Datetime.parse(eventData.get('start')),
-                EndDateTime = Datetime.parse(eventData.get('end')),
-                IsAllDayEvent = eventData.get('allDay')== 'true'?true:false
-        );
-        insert event;
-        return event;
+        //throw new AuraHandledException('Something went wrong.');
+        try {
+
+            Event event = new Event(
+                    WhoId = contactId,
+                    Subject = eventData.get('title'),
+                    Description = eventData.get('description'),
+                    StartDateTime = Datetime.parse(eventData.get('start')),
+                    EndDateTime = Datetime.parse(eventData.get('end')),
+                    IsAllDayEvent = eventData.get('allDay') == 'true' ? true : false
+            );
+            if(eventData.get('id') != '') {
+                event.Id = eventData.get('id');
+
+            }
+            else {
+                event.Contact_Name__c = eventData.get('contactName');
+                event.Contact_Email__c = eventData.get('contactEmail');
+            }
+
+            upsert event;
+            return event;
+        }catch (Exception exptn) {
+            throw new AuraHandledException('Something went wrong. Please contact your Admin with the following info: '+exptn.getMessage());
+        }
+
     }
+
+
 }

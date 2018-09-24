@@ -3,67 +3,72 @@
  */
 ({
     initializeComponent : function(component) {
+        console.log(component.get("v.recordId"));
+        //console.log(component.get("v.record.Name"));
         this.fetchEvents(component);
     },
+
+    userTimeZone : "",
     fetchEvents : function(component) {
-        let userId = $A.get("$SObjectType.CurrentUser.Id");
-        let userTimeZone = $A.get("$Locale.timezone");
         let self = this;
-        console.log(userTimeZone);
+        let userId = $A.get("$SObjectType.CurrentUser.Id");
+        self.userTimeZone = $A.get("$Locale.timezone");
         let action = component.get("c.getEventsWithOwnerId");
         action.setCallback(this, function(actionResult) {
             console.log(actionResult.getReturnValue());
-            let formattedEvents = self.transformEventInFCformat(component, actionResult.getReturnValue(),userTimeZone);
+            let formattedEvents = self.transformEventInFCformat(component, actionResult.getReturnValue(),self.userTimeZone);
             console.log("formattedEvents: ",formattedEvents);
             self.initializeCalendar(component,formattedEvents);
+            $(".fc-prev-button").html("");
+            $(".fc-prev-button").html("&nbsp;◄&nbsp;");
+            $(".fc-next-button").html("");
+            $(".fc-next-button").html("&nbsp;&#x25BA&nbsp;");
             component.set("v.events",formattedEvents);
+            component.set('v.waitSpinner', false);
         });
         $A.enqueueAction(action);
     },
 
     initializeCalendar : function(component, formattedEvents) {
         let self = this;
-        console.log(jQuery);
-        console.log(moment);
-        console.log(formattedEvents);
-       // console.log($('#calendar').fullCalendar());
         $('#calendar').fullCalendar({
-            viewRender: function(view,element){console.log(element,"   =====   ",view);},
-            eventRender: function (calev, elt, view) {
-                var ntoday = new Date();
-                console.log("calev.start: ", calev.start);
-                if (calev.start._d.getTime() < ntoday.getTime()) {
-                    //elt.addClass("past");
-                   // elt.children().addClass("past");
-                    elt.css("background-color", "green");
-                    elt.css("text-decoration", "line-through");
-                }
+            viewRender: function(view,element){
+                console.log(element,"   =====   ",view);
+                //$('#calendar').fullCalendar( 'renderEvent', self.globalEvent );
             },
+            eventRender: function (calev, elt, view) {
+                self.colorCodeEvents(calev, elt, view);
+            },
+            selectable: true,
             themeSystem: 'jquery-ui',
             header: {
-                //left: 'prev,next today',
-                left: 'today',
+                left: 'prev,next',
                 center: 'title',
-                right: 'basicDay,basicWeek, month, listMonth'//,basicWeek,basicDay'
+                right: 'agendaWeek,agendaDay,month'
             },
             
             timeFormat: 'h:mm A',
-            defaultView: 'basicDay',
+            defaultView: 'agendaDay',
             editable: true,
             eventLimit: true,
+            eventClick: function(calEvent, jsEvent, view) {
+                self.openEventForm(component, calEvent);
 
-            dayClick: function(date, jsEvent, view) {
-                console.log(component);
-                //alert('Clicked on: ' + date.format());
-                //alert('Current view: ' + view.name);
+            },
+            select: function(start, end, jsEvent, view) {
+                    if(view.name === "month" && (start.format() >= moment().format('YYYY-MM-DD')))   {
+                        component.set("v.selectedDate", start.format());
+                        self.openEventForm(component);
+                    }
 
-                // change the day's background color just for fun
-               // $(this).css('background-color', 'red');
-                component.set("v.selectedDate", date.format());
-                console.log(component.get("v.selectedDate"));
-                self.openEventForm(component, date.format());
+                    if(view.name !== "month" && moment(start.format("MM/DD/YYYY hh:mm:ss a")) >= moment()) {
+                        component.set("v.selectedDate", start.format('YYYY-MM-DD'));
+                        self.openEventForm(component,null, start, end);
 
-                        },
+                    }
+
+                    //alert('selected ' + start.format() + ' to ' + end.format());
+            },
             events: formattedEvents
         });
     },
@@ -72,109 +77,172 @@
         for(let index in events) {
             formattedEvents.push({
                 'id':events[index].Id,
+                'contactName':events[index].Who?events[index].Who.Name:"",
                 'title':events[index].Subject,
                 'start':moment(events[index].StartDateTime).tz(userTimeZone).format(),
                 'end':moment(events[index].EndDateTime).tz(userTimeZone).format(),
-                'allDay': events[index].IsAllDayEvent
+                'allDay': events[index].IsAllDayEvent,
+                'Confirmed': events[index].Confirmed__c,
+                'Rejected': events[index].Rejected_Cancelled__c,
+                'description': events[index].Description
             });
         }
         return formattedEvents;
     },
-    openEventForm : function(component) {
-        //console.log(component);
+    openEventForm : function(component,calEvent, start, end) {
+        console.log(component);
+        console.log(calEvent);
+        console.log(start );
+        console.log(end);
         component.set("v.showEventForm",true);
-        console.log(component.get("v.showEventForm"));
-//        var myEvent = {
-//            title:"New Event",
-//            allDay: true,
-//            start: new Date(),
-//            end: new Date()
-//        };
-//        $('#calendar').fullCalendar( 'renderEvent', myEvent );
-    },
-    addNewEvent: function(component) {
-        let selectedDate = component.get("v.selectedDate");
-        console.log("selectedDate: ",selectedDate);
-        console.log(component.find("subject").get("v.value"));
-        console.log(component.find("start-time").get("v.value"));
-        console.log(component.find("end-time").get("v.value"));
-        let datetimeA = moment(selectedDate + " " + component.find("start-time").get("v.value"));
-        console.log("datetimeA: ",datetimeA.format());
-        let startDateTime = moment(selectedDate + " " + component.find("start-time").get("v.value"));
-        let endDateTime = moment(selectedDate + " " + component.find("end-time").get("v.value"));
+        component.set("v.currentEventContact", component.get("v.simpleRecord.Name"));
+        if(start && end) {
+            component.find("start-time").set("v.value", start.format("HH:mm:ss"));
+            component.find("end-time").set("v.value", end.format("HH:mm:ss"));
+        }
+        if(calEvent != null) {
+            component.set("v.eventId", calEvent.id);
+            component.set("v.currentEventContact", calEvent.contactName);
+            component.find("subject").set("v.value", calEvent.title);
+            component.find("description").set("v.value", calEvent.description);
+            component.find("all-day-event").set("v.checked", calEvent.allDay);
+            component.find("start-time").set("v.value", calEvent.start.format("HH:mm:ss"));
+            component.find("end-time").set("v.value", calEvent.end.format("HH:mm:ss"));
+        }
 
-    	let myEvent = {
-        	title:component.find("subject").get("v.value"),
-			allDay: component.find("all-day-event").get("v.value"),
-			start: startDateTime.format(),
-			end: endDateTime.format()
-		};
-        //console.log("Worked till here");
-		$('#calendar').fullCalendar( 'renderEvent', myEvent );
-		component.set("v.showEventForm",false);
+
+
     },
     saveEvent: function(component) {
-        console.log(component.get("v.recordId"));
+        let self = this;
         let selectedDate = component.get("v.selectedDate");
         let startDateTime = moment(selectedDate + " " + component.find("start-time").get("v.value"));
         let endDateTime = moment(selectedDate + " " + component.find("end-time").get("v.value"));
+        let eventId = component.get("v.eventId");
         let myEvent = {
-            title:component.find("subject").get("v.value"),
-            allDay: component.find("all-day-event").get("v.value"),
-            //start: startDateTime.toISOString(),
+            contactName: component.get("v.simpleRecord.Name"),
+            contactEmail: component.get("v.simpleRecord.Email"),
+            id: eventId?eventId:"",
+            title: component.find("subject").get("v.value"),
+            allDay: component.find("all-day-event").get("v.checked")?"true":"false",
+            Confirmed: false,
+            Rejected: false,
+            stick: true,
+            description: component.find("description").get("v.value"),
             start: startDateTime.format("MM/DD/YYYY hh:mm a"),
             end: endDateTime.format("MM/DD/YYYY hh:mm a")
         };
-        console.log("myEvent: ",myEvent);
-        let action = component.get("c.saveEvent");
-        action.setParams({
-            contactId: component.get("v.recordId"),
-            eventData: myEvent
-        })
-        action.setCallback(this, function(actionResult) {
-            console.log(actionResult.getReturnValue());
+        const conflictingEvents = self.findConflictingEvent(component, startDateTime,endDateTime);
+        if(conflictingEvents.length > 0) {
+            let confirmation = confirm(`You have ${conflictingEvents.length} Conflicting Events. Click OK to save`);
+            if (confirmation) {
+               let action = component.get("c.saveEvent");
+               action.setParams({
+                   contactId: component.get("v.recordId"),
+                   eventData: myEvent
+               })
+               action.setCallback(this, function(actionResult) {
+                   component.set("v.showEventForm",false);
+                   let resultedEvent = {};
+                   resultedEvent = self.transformEventInFCformat(component, [actionResult.getReturnValue()], self.userTimeZone)[0];
+                   $('#calendar').fullCalendar( 'renderEvent', resultedEvent, true );
+                   component.set('v.waitSpinner', false);
+               });
+               $A.enqueueAction(action);
+           }
+             else {
+                component.set('v.waitSpinner', false);
+            }
 
-            $('#calendar').fullCalendar( 'renderEvent', myEvent );
-            component.set("v.showEventForm",false);
-        });
-        $A.enqueueAction(action);
 
+        }
+        else {
+            let action = component.get("c.saveEvent");
+            action.setParams({
+                contactId: component.get("v.recordId"),
+                eventData: myEvent
+            })
+            action.setCallback(this, function(actionResult) {
+                let resultedEvent = {};
+                let state = actionResult.getState();
+                if(state === "ERROR") {
+                    let errors = actionResult.getError();
+                    component.set('v.message', errors[0].message);
+                    component.set("v.hasError", true);
+                }
+                else {
+                    resultedEvent = self.transformEventInFCformat(component, [actionResult.getReturnValue()], self.userTimeZone)[0];
+                    $('#calendar').fullCalendar( 'renderEvent', resultedEvent, true );
+                    component.set("v.showEventForm",false);
+                }
+                component.set('v.waitSpinner', false);
+
+            });
+            $A.enqueueAction(action);
+        }
     },
-    saveEvents: function(component) {
-        //$('#testPrev').click(function() {
-          //$('#calendar').fullCalendar('prev');
-        //});
+    colorCodeEvents: function(calev, elt, view) {
+        if (calev.start.diff(moment()) <0) {
+           // console.log("calev.start: ", calev.start);
+            elt.css("background-color", "#bfe0f1");
+            elt.css("border-color", "#0575b2");
+            elt.css("color", "#0575b2");
+        }
+        if(calev.Rejected) {
+            elt.css("text-decoration", "line-through");
+            elt.css("color", "#ef2310f2");
+            elt.css("border-color", "#ef2310f2");
+            elt.css("background-color","#edaaa4f2");
+        }
+        if(calev.Confirmed) {
+            elt.css("background-color", "#8fe972");
+            elt.css("border-color", "#289504");
+            elt.css("color", "#289504");
+        }
+    },
+    handleAllDayEvent: function(component,event) {
+        let isAllDayEvent = component.find("all-day-event").get("v.checked");
+        if(isAllDayEvent) {
+           let stElem = component.find("start-time");
+           let etElem = component.find("end-time");
+           stElem.set("v.disabled", true);
+           etElem.set("v.disabled", true);
+           stElem.set("v.value", "");
+           etElem.set("v.value", "");
+        }
+        else {
+          component.find("start-time").set("v.disabled", false);
+          component.find("end-time").set("v.disabled", false);
+        }
+    },
+    handleTimeInput: function(component, event, helper) {
+        let stElem = component.find("start-time");
+        let etElem = component.find("end-time");
+        stElem.setCustomValidity("");
+        etElem.setCustomValidity("");
+        let startTime = stElem.get("v.value");
+        let endTime = etElem.get("v.value");
+        if(event.getSource().getLocalId() === "start-time") {
+            if(endTime != "" && startTime > endTime) {
+                stElem.setCustomValidity("Start Time cannot be greater then End Time");
+            }
+            stElem.reportValidity();
+        }
+        else {
+           if(startTime != "" && startTime > endTime) {
+                etElem.setCustomValidity("End Time cannot be less then start Time");
+           }
 
-//          $('#testPrev').fullCalendar({
-//              viewRender: function(view, element) {
-//                  console.log(view);
-//                  //Do something
-//              }
-//          });
-//        console.log($('#calendar').fullCalendar('clientEvents'));
-//        let action = component.get("c.saveEvents");
-//        let eventsData = this.simplifyEventData($('#calendar').fullCalendar('clientEvents'));
-//        console.log(eventsData);
-//        action.setParams({ events : eventsData});
-//        console.log("Culprit is not above");
-//        action.setCallback(this, function(actionResult) {
-//
-//            console.log(actionResult.getReturnValue());
-//        });
-//        $A.enqueueAction(action);
+        }
+        stElem.reportValidity();
+        etElem.reportValidity();
     },
 
-//    simplifyEventData: function(events) {
-//        simplifiedEvents = [];
-//        for(let index in events) {
-//            let simplifiedEvent = {
-//                id: events[index].id,
-//                title:events[index].id,
-//                allDay: events[index].allDay,
-//                start: events[index].start.format(),
-//                end: events[index].id
-//            }
-//        }
-//    }
+    findConflictingEvent: function(component, startDateTime, endDateTime) {
+        let allEvents = component.get("v.events");
+        const result = allEvents.filter(event => (((moment(event.start).isBetween(startDateTime, endDateTime)) || (moment(event.start).isSame(startDateTime))) || ((moment(event.end).isBetween(startDateTime, endDateTime)) || (moment(event.end).isSame(endDateTime)))));
+        console.log(result);
+        return result;
+    }
 
 })

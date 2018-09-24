@@ -2,7 +2,7 @@
  - Created by Neha on 9/17/2018.
  -->
 
-<aura:component description="CalenderComponent" implements="force:appHostable,flexipage:availableForAllPageTypes,force:lightningQuickActionWithoutHeader,force:hasRecordId" controller="CalendarComponentAuraController">
+<aura:component description="CalenderComponent" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:lightningQuickActionWithoutHeader,force:hasRecordId" controller="CalendarComponentAuraController">
     <ltng:require styles="{!join(',',
     $Resource.FullCalendarPlugin  + '/fullcalendar.min.css',
     $Resource.FullCalendarPlugin  + '/lib/jquery-ui.css')}" scripts="{!join(',',
@@ -10,32 +10,64 @@
     $Resource.FullCalendarPlugin  + '/lib/jquery-ui.min.js',
     $Resource.FullCalendarPlugin  + '/lib/moment.min.js',
     $Resource.FullCalendarPlugin  + '/lib/moment-tz.min.js',$Resource.FullCalendarPlugin  + '/fullcalendar.js')}" afterScriptsLoaded= "{!c.onJSload}"/>
-    <!--<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>-->
+
+    <aura:attribute name="waitSpinner" type="Boolean" default="true"/>
     <aura:attribute name="showEventForm" type="Boolean" default="false"/>
     <aura:attribute name="events" type="Object[]" />
     <aura:attribute name="newEvents" type="Object[]" />
     <aura:attribute name="selectedDate" type="Date"/>
-    <aura:attribute name="recordId" type="String"/>
-    <!--<aura:attribute name="subject" type="String"/>-->
-    <!--<aura:attribute name="startTime" type="Time"/>-->
-    <!--<aura:attribute name="endTime" type="Time"/>-->
-    <!--<aura:attribute name="isAllDayEvent" type="Boolean"/>-->
+    <aura:attribute name="eventId" type="String"/>
+    <aura:attribute name="testAttr" type="String" default="1"/>
+    <aura:attribute name="hasError" type="Boolean" default="false"/>
+    <aura:attribute name="message" type="String" />
+    <aura:attribute name="contactInContext" type="Contact"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="record" type="Object"/>
+    <aura:attribute name="simpleRecord" type="Object"/>
 
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields='Name,Email'
+                      targetFields="{!v.simpleRecord}"/>
 
-    <!-- Event Creation Form -->
+    <aura:if isTrue="{!v.waitSpinner}">
+        <div class="demo-only">
+            <div role="status" class="slds-spinner slds-spinner_medium">
+                <span class="slds-assistive-text">Loading...</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
 
-    <div class="slds-modal__content" id="calendar" style="height:570px; width:570px"></div>
     <aura:if isTrue="{!v.showEventForm}">
         <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <aura:if isTrue="{!v.hasError}">
+                <div class="error-message-div"><div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                        <span class="slds-assistive-text">error</span>
+                        <span class="slds-icon_container slds-icon-utility-error slds-m-right_x-small" title="Description of icon when needed">
+            <lightning:icon iconName="utility:error" variant="inverse" size="small"></lightning:icon>
+  </span>
+                        <h2>{!v.message}
+                        </h2>
+                        <div class="slds-notify__close">
+                            <button class="slds-button slds-button_icon slds-button_icon-inverse" title="Close" onclick="{!c.onCloseClick}">
+                                <span class="slds-assistive-text">Close</span>
+                                <lightning:icon iconName="utility:close" variant="inverse" size="small" ></lightning:icon>
+                            </button>
+                        </div>
+                    </div></div>
+            </aura:if>
             <div class="slds-modal__container">
                 <header class="slds-modal__header">
-                    <h2>New Meeting Request</h2>
+                    <h2>Meeting with: {!v.simpleRecord.Name}</h2>
                 </header>
                 <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
-                    <lightning:input aura:id="subject" label="Subject" type="text" value=""/>
-                    <lightning:input aura:id="start-time" label="Start Time" type="time" value=""/>
-                    <lightning:input aura:id="end-time" label="End Time" type="time" value=""/>
-                    <lightning:input aura:id="all-day-event" label="All Day Event" type="checkbox" value="false"/>
+                    <lightning:input aura:id="subject" label="Subject" type="text" value="" />
+                    <lightning:textarea aura:id="description" label="Description" type="text" value=""/>
+                    <lightning:input aura:id="start-time" label="Start Time" type="time" value="" onchange="{!c.onTimeInput}"/>
+                    <lightning:input aura:id="end-time" label="End Time" type="time" value="" onchange="{!c.onTimeInput}"/>
+                    <lightning:input aura:id="all-day-event" label="All Day Event" type="checkbox" checked="false" onchange="{!c.onAllDayEventClick}"/>
                     <!--<ui:inputCheckbox aura:id="all-day-event" label="All Day Event" value="false"/>-->
                 </div>
                 <footer class="slds-modal__footer">
@@ -52,11 +84,10 @@
         </section>
         <div class="slds-backdrop slds-backdrop_open"></div>
     </aura:if>
-    <!--<footer class="slds-modal__footer">-->
-        <lightning:button variant="neutral"
-                          label="Close"
-                          title="Close" onclick="{!c.closeModal}"/>
-    <button id="testPrev" onclick="{!c.saveData}">TestPrev</button>
-    <!--</footer>-->
-
+    <!-- Event Creation Form -->
+    <div class="slds-modal__content" id="calendar" ></div>
+        <!--<lightning:button variant="neutral"-->
+                          <!--label="Close"-->
+                          <!--title="Close" onclick="{!c.closeModal}"/>-->
+    <!--<button id="testPrev" onclick="{!c.saveData}">TestPrev</button>-->
 </aura:component>
