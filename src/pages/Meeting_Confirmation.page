@@ -1,0 +1,91 @@
+<!--
+ - Created by Neha on 9/23/2018.
+ -->
+
+<apex:page id="Meeting_Confirmation" controller="MeetingConfirmationController" showHeader="false" action="{!onPageLoad}">
+    <html>
+        <body>
+        <style>
+            .field-label {
+                font-weight: 700;
+                min-width: 70px;
+                text-align: right;
+            }
+            .field-display {
+                display: flex;
+                min-height: 30px;
+            }
+            .field-value-display {
+                margin-left: 20px;
+            }
+        </style>
+        <!--<apex:form id="eventForm">-->
+            <div style="height: 500px;width: 500px;margin-left: 40%;margin-top: 5%;">
+
+                <div style="border-bottom: 2px solid #ccc;">
+                    <h1 style="font-size: large;">{!eventHeaderString}</h1>
+                </div>
+            </div>
+                <!--div style="margin: 30px;">
+                    <div class="field-display">
+                        <div class="field-label">
+                            <label >Organizer: </label>
+                        </div>
+                        <div class="field-value-display">
+                            <outputText>{!event.Owner.Name}</outputText>
+                        </div>
+                    </div>
+                    <div class="field-display">
+                        <div class="field-label">
+                            <label >Subject: </label>
+                        </div>
+                        <div class="field-value-display">
+                            <outputText>{!event.Subject}</outputText>
+                        </div>
+                    </div>
+                    <div class="field-display">
+                        <div class="field-label">
+                            <label >Start: </label>
+                        </div>
+                        <div class="field-value-display">
+                            <outputText>{!event.StartDateTime}</outputText>
+                        </div>
+                    </div>
+                    <div class="field-display">
+                        <div class="field-label">
+                            <label >End: </label>
+                        </div>
+                        <div class="field-value-display">
+                            <outputText>{!event.EndDateTime}</outputText>
+                        </div>
+                    </div>
+                    <div class="field-display">
+                        <div class="field-label">
+                            <label >email: </label>
+                        </div>
+                        <div class="field-value-display">
+                            <outputText>{!event.Contact_Email__c}</outputText>
+                        </div>
+                    </div>
+                    <div class="field-display">
+                        <div class="field-label">
+                            <label >Comment: </label>
+                        </div>
+                        <div class="field-value-display">
+                            <apex:inputTextarea value="{!comment}"></apex:inputTextarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="field-display">
+                    <div>
+                        <apex:commandButton value="Confirm" action="{!confirmMeeting}" disabled="false"/>
+                    </div>
+                    <div>
+                        <apex:commandButton value="Reject" action="{!rejectMeeting}"/>
+                    </div>
+                </div>
+            </div>
+        </apex:form-->
+        </body>
+    </html>
+</apex:page>

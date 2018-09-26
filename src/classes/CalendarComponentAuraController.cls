@@ -7,14 +7,17 @@ public with sharing class CalendarComponentAuraController {
     @AuraEnabled
     public static List<Event> getEventsWithOwnerId() {
         Id userId = UserInfo.getUserId();
-        System.debug('userId: '+userId);
+        Date nextCalculatedDate = System.today().addMonths(6);
+        Date firstCalculatedDate = System.today().addMonths(-5);
+        Date lastEndDate = Date.newInstance(nextCalculatedDate.year(), nextCalculatedDate.month(), Date.daysInMonth(nextCalculatedDate.year(), nextCalculatedDate.month()));
 
-        return [SELECT EndDateTime,Description,Id,IsAllDayEvent,StartDateTime,Subject,Type,WhatId,WhoId,Who.Name, Confirmed__c,Rejected_Cancelled__c FROM Event WHERE OwnerId =:userId AND isDeleted = FALSE ];
+        Date firstStartDate = Date.newInstance(firstCalculatedDate.year(), firstCalculatedDate.month(), 1);
+        return [SELECT EndDateTime,Description,Id,IsAllDayEvent,StartDateTime,Subject,Type,WhatId,WhoId,Who.Name, Confirmed__c,Rejected_Cancelled__c FROM Event WHERE startDateTime >=: firstStartDate AND endDateTime <=:lastEndDate AND OwnerId =:userId AND isDeleted = FALSE ];
     }
 
     @AuraEnabled
     public static Event saveEvent(String contactId, Map<String, String> eventData) {
-        //throw new AuraHandledException('Something went wrong.');
+        System.debug(eventData);
         try {
 
             Event event = new Event(
@@ -22,8 +25,7 @@ public with sharing class CalendarComponentAuraController {
                     Subject = eventData.get('title'),
                     Description = eventData.get('description'),
                     StartDateTime = Datetime.parse(eventData.get('start')),
-                    EndDateTime = Datetime.parse(eventData.get('end')),
-                    IsAllDayEvent = eventData.get('allDay') == 'true' ? true : false
+                    EndDateTime = Datetime.parse(eventData.get('end'))
             );
             if(eventData.get('id') != '') {
                 event.Id = eventData.get('id');

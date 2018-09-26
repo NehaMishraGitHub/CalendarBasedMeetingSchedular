@@ -16,7 +16,7 @@
     <aura:attribute name="events" type="Object[]" />
     <aura:attribute name="newEvents" type="Object[]" />
     <aura:attribute name="selectedDate" type="Date"/>
-    <aura:attribute name="eventId" type="String"/>
+    <aura:attribute name="eventToBeUpdated" type="Object" default=""/>
     <aura:attribute name="testAttr" type="String" default="1"/>
     <aura:attribute name="hasError" type="Boolean" default="false"/>
     <aura:attribute name="message" type="String" />
@@ -67,8 +67,6 @@
                     <lightning:textarea aura:id="description" label="Description" type="text" value=""/>
                     <lightning:input aura:id="start-time" label="Start Time" type="time" value="" onchange="{!c.onTimeInput}"/>
                     <lightning:input aura:id="end-time" label="End Time" type="time" value="" onchange="{!c.onTimeInput}"/>
-                    <lightning:input aura:id="all-day-event" label="All Day Event" type="checkbox" checked="false" onchange="{!c.onAllDayEventClick}"/>
-                    <!--<ui:inputCheckbox aura:id="all-day-event" label="All Day Event" value="false"/>-->
                 </div>
                 <footer class="slds-modal__footer">
                     <lightning:button variant="neutral"
@@ -78,7 +76,7 @@
                     <lightning:button variant="brand"
                                       label="Save and Close"
                                       title="Save and Close"
-                                      onclick="{!c.saveData}"/>
+                                      onclick="{!c.onSaveClick}"/>
                 </footer>
             </div>
         </section>
@@ -86,8 +84,4 @@
     </aura:if>
     <!-- Event Creation Form -->
     <div class="slds-modal__content" id="calendar" ></div>
-        <!--<lightning:button variant="neutral"-->
-                          <!--label="Close"-->
-                          <!--title="Close" onclick="{!c.closeModal}"/>-->
-    <!--<button id="testPrev" onclick="{!c.saveData}">TestPrev</button>-->
 </aura:component>

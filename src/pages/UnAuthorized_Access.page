@@ -1,0 +1,11 @@
+<!--
+ - Created by Neha on 9/24/2018.
+ -->
+
+<apex:page id="UnAuthorized_Access" showHeader="false">
+    You are trying to access an UnAuthorized page
+
+    <div style="display: flex"><div style="margin:5px; width: 60px;height: 25px;border: 1px solid #4bc076;text-align: center;padding-top: 7px;background-color: #048a1ba3;"><a href="https://www.google.com" target="_blank" style="text-decoration: none;font-weight: 600;">Confirm</a></div>
+
+    <div style="margin:5px; width: 60px;height: 25px;border: 1px solid #df1212;text-align: center;padding-top: 7px;background-color: #f11e1ec7;"><a href="https://www.google.com" target="_blank" style="text-decoration: none;font-weight: 600;">Reject</a></div></div>
+</apex:page>

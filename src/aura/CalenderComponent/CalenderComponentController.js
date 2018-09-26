@@ -20,9 +20,9 @@
        // component.destroy();
        component.set("v.showEventForm", false);
     },
-    saveData: function(component, event, helper) {
+    onSaveClick: function(component, event, helper) {
         component.set('v.waitSpinner', true);
-        helper.saveEvent(component);
+        helper.handleSaveEvent(component);
     },
     closeModal: function(component, event, helper) {
         $A.get("e.force:closeQuickAction").fire();
